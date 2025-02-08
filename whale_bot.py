@@ -1,16 +1,22 @@
+import os
 import requests
 import telebot
-import os
+from flask import Flask, request
 
-# Get the Telegram bot token from environment variables
+# تنظیم توکن بات
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+WEBHOOK_URL = f"https://YOUR_RENDER_SERVICE.onrender.com/{BOT_TOKEN}"
+
 bot = telebot.TeleBot(BOT_TOKEN)
 
-# Remove webhook to prevent conflict with polling
-bot.remove_webhook()
+# سرور Flask برای Webhook
+app = Flask(__name__)
 
-# API Endpoint for Dexscreener
-DEXSCREENER_API = "https://api.dexscreener.com/latest/dex/tokens/{}"
+@app.route(f"/{BOT_TOKEN}", methods=["POST"])
+def receive_update():
+    json_update = request.get_json()
+    bot.process_new_updates([telebot.types.Update.de_json(json_update)])
+    return "", 200
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
@@ -22,12 +28,11 @@ def track_token(message):
     bot.reply_to(message, f"🔍 Checking market data for: {token_address} ...")
 
     try:
-        response = requests.get(DEXSCREENER_API.format(token_address), timeout=10)
+        response = requests.get(f"https://api.dexscreener.com/latest/dex/tokens/{token_address}", timeout=10)
         data = response.json()
 
         if 'pairs' in data and len(data['pairs']) > 0:
-            pair = data['pairs'][0]  # Get the first available trading pair
-            
+            pair = data['pairs'][0]
             price_usd = pair.get('priceUsd', 'N/A')
             volume_24h = pair['volume'].get('h24', 'N/A')
             buys = pair['txns']['h24'].get('buys', 0)
@@ -52,6 +57,7 @@ def track_token(message):
     except Exception as e:
         bot.reply_to(message, f"⚠️ Error fetching data: {str(e)}")
 
-# Start polling with optimized settings to prevent 409 error
 if __name__ == "__main__":
-    bot.polling(none_stop=True, interval=0, timeout=20)
+    bot.remove_webhook()
+    bot.set_webhook(url=WEBHOOK_URL)
+    app.run(host="0.0.0.0", port=int(os.getenv("PORT", 8080)))
