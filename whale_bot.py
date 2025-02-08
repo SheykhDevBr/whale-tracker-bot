@@ -4,12 +4,13 @@ import os
 
 # Get the Telegram bot token from environment variables
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+bot = telebot.TeleBot(BOT_TOKEN)
+
+# Remove webhook to prevent conflict with polling
+bot.remove_webhook()
 
 # API Endpoint for Dexscreener
 DEXSCREENER_API = "https://api.dexscreener.com/latest/dex/tokens/{}"
-
-# Initialize Telegram Bot
-bot = telebot.TeleBot(BOT_TOKEN)
 
 @bot.message_handler(commands=['start'])
 def send_welcome(message):
@@ -51,22 +52,6 @@ def track_token(message):
     except Exception as e:
         bot.reply_to(message, f"⚠️ Error fetching data: {str(e)}")
 
+# Start polling with optimized settings to prevent 409 error
 if __name__ == "__main__":
-    bot.polling(none_stop=True)
-    import os
-from flask import Flask
-
-# Fake server to prevent Render port error
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return "Bot is running!"
-
-if __name__ == "__main__":
-    port = int(os.getenv("PORT", 8080))
-    app.run(host="0.0.0.0", port=port)
-
-# Stop any previous polling before starting a new one
-bot.remove_webhook()
-bot.infinity_polling()
+    bot.polling(none_stop=True, interval=0, timeout=20)
