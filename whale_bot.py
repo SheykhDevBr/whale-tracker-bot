@@ -67,3 +67,6 @@ if __name__ == "__main__":
     port = int(os.getenv("PORT", 8080))
     app.run(host="0.0.0.0", port=port)
 
+# Stop any previous polling before starting a new one
+bot.remove_webhook()
+bot.infinity_polling()
