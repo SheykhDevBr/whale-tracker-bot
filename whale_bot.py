@@ -5,7 +5,7 @@ from flask import Flask, request
 
 # تنظیم توکن بات
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-WEBHOOK_URL = f"https://YOUR_RENDER_SERVICE.onrender.com/{BOT_TOKEN}"
+WEBHOOK_URL = f"https://whale-tracker-bot.onrender.com/{BOT_TOKEN}"
 
 bot = telebot.TeleBot(BOT_TOKEN)
 
